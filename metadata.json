@@ -1,0 +1,8 @@
+{
+  "name": "TechDepan - Gestion de Dépannage Informatique",
+  "description": "Application pour technicien informatique : gestion des demandes clients, planification des interventions, actions rapides (Appel, WhatsApp, GPS) et suivi des fiches d'intervention.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

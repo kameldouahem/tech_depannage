@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#2563eb"/>
+    </linearGradient>
+    <linearGradient id="amber" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <rect x="76" y="96" width="360" height="240" rx="24" fill="none" stroke="url(#accent)" stroke-width="24"/>
+  <line x1="196" y1="336" x2="176" y2="400" stroke="url(#accent)" stroke-width="24" stroke-linecap="round"/>
+  <line x1="316" y1="336" x2="336" y2="400" stroke="url(#accent)" stroke-width="24" stroke-linecap="round"/>
+  <line x1="140" y1="400" x2="372" y2="400" stroke="url(#accent)" stroke-width="24" stroke-linecap="round"/>
+  <!-- Screen display lines -->
+  <line x1="120" y1="150" x2="280" y2="150" stroke="#38bdf8" stroke-width="12" stroke-linecap="round" opacity="0.6"/>
+  <line x1="120" y1="186" x2="220" y2="186" stroke="#38bdf8" stroke-width="12" stroke-linecap="round" opacity="0.6"/>
+  <!-- Tool badge / Wrench + Bolt -->
+  <circle cx="340" cy="240" r="76" fill="#0f172a" stroke="url(#amber)" stroke-width="14"/>
+  <path d="M366 214c8-8 10-21 4-30-3-4-8-7-13-7-3 0-6 1-9 3l-14 14-16-16 14-14c4-4 4-11 1-15-4-5-11-6-16-3l-7 4c-12 8-16 23-11 36l-32 32c-5 5-5 13 0 18l14 14c5 5 13 5 18 0l32-32c7 3 15 3 22 0z" fill="url(#amber)"/>
+</svg>
