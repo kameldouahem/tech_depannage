@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserProfile } from '../types';
 import { getSupabaseClient, isSupabaseConfigured } from '../lib/supabase';
+import { auth, googleAuthProvider } from '../lib/firebase';
+import { signInWithPopup } from 'firebase/auth';
 import technicianAvatar from '../assets/images/technician_avatar_1791279284630.jpg';
 
 interface AuthContextType {
@@ -8,6 +10,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ success: boolean; message: string }>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<boolean>;
@@ -73,18 +76,56 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Check local storage session
       const savedUser = localStorage.getItem('techdepan_auth_user');
-      if (savedUser) {
-        try {
-          setUser(JSON.parse(savedUser));
-        } catch {
-          localStorage.removeItem('techdepan_auth_user');
+      let initialUser = savedUser ? JSON.parse(savedUser) : null;
+
+      // Fetch cloud company profile from Cloud SQL PostgreSQL
+      try {
+        const res = await fetch('/api/profile');
+        if (res.ok) {
+          const cloudProfile = await res.json();
+          if (cloudProfile && cloudProfile.companyName) {
+            initialUser = {
+              ...(initialUser || DEFAULT_ADMIN),
+              ...cloudProfile,
+              avatarUrl: initialUser?.avatarUrl || technicianAvatar,
+            };
+          }
         }
+      } catch (err) {
+        console.warn('Could not fetch cloud profile on start:', err);
+      }
+
+      if (initialUser) {
+        setUser(initialUser);
       }
       setIsLoading(false);
     };
 
     checkAuth();
   }, []);
+
+  const loginWithGoogle = async (): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const cred = await signInWithPopup(auth, googleAuthProvider);
+      if (cred.user) {
+        const profile: UserProfile = {
+          ...DEFAULT_ADMIN,
+          id: cred.user.uid,
+          email: cred.user.email || 'admin@depannage.fr',
+          fullName: cred.user.displayName || DEFAULT_ADMIN.fullName,
+          avatarUrl: cred.user.photoURL || technicianAvatar,
+          role: 'admin',
+        };
+        setUser(profile);
+        localStorage.setItem('techdepan_auth_user', JSON.stringify(profile));
+        return { success: true };
+      }
+      return { success: false, error: 'Connexion Google annulée.' };
+    } catch (err: any) {
+      console.error('Google Sign-in error:', err);
+      return { success: false, error: err.message || 'Échec de connexion avec Google' };
+    }
+  };
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     const cleanEmail = email.trim().toLowerCase();
@@ -229,6 +270,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
+      // Sync to Cloud SQL PostgreSQL database via backend API
+      try {
+        await fetch('/api/profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updated),
+        });
+      } catch (err) {
+        console.warn('Cloud SQL profile sync warning:', err);
+      }
+
       return true;
     } catch (err) {
       console.error('Erreur mise à jour profil:', err);
@@ -243,6 +295,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated: !!user,
         isLoading,
         login,
+        loginWithGoogle,
         logout,
         resetPassword,
         updateProfile,

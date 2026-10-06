@@ -113,7 +113,7 @@ export const ClientPublicView: React.FC<ClientPublicViewProps> = ({ onSwitchToAd
     }
   };
 
-  const handleTrackSubmit = (e: React.FormEvent) => {
+  const handleTrackSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!trackQuery.trim()) return;
 
@@ -127,9 +127,24 @@ export const ClientPublicView: React.FC<ClientPublicViewProps> = ({ onSwitchToAd
 
     if (found) {
       setTrackedTicket(found);
-    } else {
-      setTrackedTicket('not_found');
+      return;
     }
+
+    // Fallback: search live in Cloud SQL database
+    try {
+      const res = await fetch(`/api/public/tickets/${encodeURIComponent(cleanQ)}`);
+      if (res.ok) {
+        const cloudFound = await res.json();
+        if (cloudFound && cloudFound.id) {
+          setTrackedTicket(cloudFound);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn('Erreur recherche Cloud SQL:', err);
+    }
+
+    setTrackedTicket('not_found');
   };
 
   const getStatusProgress = (status: string) => {

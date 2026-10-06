@@ -225,6 +225,22 @@ export const getStoredTickets = (): InterventionTicket[] => {
   }
 };
 
+export const fetchTicketsFromCloud = async (): Promise<InterventionTicket[]> => {
+  try {
+    const res = await fetch('/api/tickets');
+    if (res.ok) {
+      const cloudTickets: InterventionTicket[] = await res.json();
+      if (Array.isArray(cloudTickets) && cloudTickets.length > 0) {
+        saveTickets(cloudTickets);
+        return cloudTickets;
+      }
+    }
+  } catch (err) {
+    console.warn('Could not sync tickets from Cloud SQL:', err);
+  }
+  return getStoredTickets();
+};
+
 export const saveTickets = (tickets: InterventionTicket[]): void => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(tickets));
@@ -257,6 +273,22 @@ export const addTicket = (ticketData: Omit<InterventionTicket, 'id' | 'ticketNum
 
   const updated = [newTicket, ...current];
   saveTickets(updated);
+
+  // Sync to Cloud SQL in background
+  fetch('/api/tickets', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(ticketData),
+  })
+    .then((res) => res.json())
+    .then((serverTicket) => {
+      if (serverTicket && serverTicket.id) {
+        const fresh = getStoredTickets().map((t) => (t.id === newTicket.id ? serverTicket : t));
+        saveTickets(fresh);
+      }
+    })
+    .catch((err) => console.warn('Cloud SQL ticket sync error:', err));
+
   return newTicket;
 };
 
@@ -296,6 +328,14 @@ export const updateTicket = (id: string, updates: Partial<InterventionTicket>, c
 
   current[index] = updatedTicket;
   saveTickets(current);
+
+  // Sync to Cloud SQL in background
+  fetch(`/api/tickets/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ updates, changeNote }),
+  }).catch((err) => console.warn('Cloud SQL update sync error:', err));
+
   return updatedTicket;
 };
 
@@ -304,6 +344,9 @@ export const deleteTicket = (id: string): boolean => {
   const filtered = current.filter(t => t.id !== id);
   if (filtered.length !== current.length) {
     saveTickets(filtered);
+    fetch(`/api/tickets/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    }).catch((err) => console.warn('Cloud SQL delete sync error:', err));
     return true;
   }
   return false;

@@ -16,7 +16,7 @@ import { InstallAppModal } from './components/InstallAppModal';
 import { ClientPublicView } from './components/ClientPublicView';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { InterventionTicket, InterventionStatus } from './types';
-import { getStoredTickets, updateTicket, deleteTicket } from './lib/storage';
+import { getStoredTickets, fetchTicketsFromCloud, updateTicket, deleteTicket } from './lib/storage';
 
 const MainApp: React.FC = () => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -40,13 +40,27 @@ const MainApp: React.FC = () => {
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<InterventionTicket | null>(null);
 
-  // Load tickets on mount
+  // Load tickets on mount with Cloud SQL sync
   useEffect(() => {
     setTickets(getStoredTickets());
+    fetchTicketsFromCloud()
+      .then((cloudTickets) => {
+        if (cloudTickets && cloudTickets.length > 0) {
+          setTickets(cloudTickets);
+        }
+      })
+      .catch(console.warn);
   }, []);
 
   const refreshTickets = () => {
     setTickets(getStoredTickets());
+    fetchTicketsFromCloud()
+      .then((cloudTickets) => {
+        if (cloudTickets && cloudTickets.length > 0) {
+          setTickets(cloudTickets);
+        }
+      })
+      .catch(console.warn);
   };
 
   const handleTicketCreated = (newTicket: InterventionTicket) => {
